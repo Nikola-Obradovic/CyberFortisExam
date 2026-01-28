@@ -30,12 +30,12 @@ SERVER_PID=$!
 # Wait for server to start
 sleep 2
 
-# Open browser in app mode (kiosk-like)
+# Open browser in kiosk mode (fullscreen)
 # Try Chrome first for best kiosk experience, then Safari
 if [ -d "/Applications/Google Chrome.app" ]; then
-    open -a "Google Chrome" --args --kiosk --app="http://localhost:3000"
+    open -a "Google Chrome" --args --kiosk "http://localhost:3000"
 elif [ -d "/Applications/Chromium.app" ]; then
-    open -a "Chromium" --args --kiosk --app="http://localhost:3000"
+    open -a "Chromium" --args --kiosk "http://localhost:3000"
 else
     # Safari doesn't support kiosk mode, but will still work
     open -a "Safari" "http://localhost:3000"

@@ -29,17 +29,26 @@ start /min cmd /c "npm start"
 REM Wait for server to start
 timeout /t 3 /nobreak >nul
 
-REM Open browser in kiosk/app mode
+REM Open browser in kiosk mode (fullscreen)
 REM Try Chrome first, then Edge, then default browser
-where chrome >nul 2>nul
-if %errorlevel%==0 (
-    start chrome --kiosk --app="http://localhost:3000"
+
+REM Check for Chrome in common locations
+if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" (
+    start "" "%ProgramFiles%\Google\Chrome\Application\chrome.exe" --kiosk "http://localhost:3000"
+    goto :eof
+)
+if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" (
+    start "" "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" --kiosk "http://localhost:3000"
+    goto :eof
+)
+if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" (
+    start "" "%LocalAppData%\Google\Chrome\Application\chrome.exe" --kiosk "http://localhost:3000"
     goto :eof
 )
 
-where msedge >nul 2>nul
-if %errorlevel%==0 (
-    start msedge --kiosk --app="http://localhost:3000"
+REM Check for Edge
+if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" (
+    start "" "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" --kiosk "http://localhost:3000"
     goto :eof
 )
 

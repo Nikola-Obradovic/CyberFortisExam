@@ -129,33 +129,43 @@ function generatePDF(submissionId, userInfo, results, questions, score, date, ca
 
   doc.pipe(stream);
 
-  // Register a font that supports UTF-8 Serbian characters
-  // Try to use DejaVu Sans font (common on Linux systems)
+  // Register a font that supports UTF-8 Serbian characters AND Unicode symbols (✓ ✗)
   const fontPaths = [
-    // Linux fonts
+    // Linux fonts (DejaVu has excellent Unicode support including symbols)
     '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
     '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
-    // macOS fonts (multiple options for compatibility)
-    '/System/Library/Fonts/Supplemental/Arial.ttf',
-    '/System/Library/Fonts/Helvetica.ttc',
-    '/Library/Fonts/Arial.ttf',
-    '/System/Library/Fonts/SFNS.ttf',
-    // Windows fonts
-    'C:\\Windows\\Fonts\\arial.ttf',
-    'C:\\Windows\\Fonts\\segoeui.ttf'
+    '/usr/share/fonts/TTF/DejaVuSans.ttf',
+    // macOS fonts - prioritize fonts with good Unicode symbol support
+    '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
+    '/Library/Fonts/Arial Unicode.ttf',
+    '/System/Library/Fonts/Apple Symbols.ttf',
+    '/System/Library/Fonts/Supplemental/Apple Symbols.ttf',
+    '/System/Library/Fonts/LucidaGrande.ttc',
+    '/System/Library/Fonts/Supplemental/Lucida Grande.ttf',
+    '/System/Library/Fonts/Menlo.ttc',
+    // Windows fonts (Segoe UI has good symbol support)
+    'C:\\Windows\\Fonts\\seguisym.ttf',
+    'C:\\Windows\\Fonts\\segoeui.ttf',
+    'C:\\Windows\\Fonts\\arial.ttf'
   ];
 
   let fontRegistered = false;
   for (const fontPath of fontPaths) {
     if (fs.existsSync(fontPath)) {
-      doc.font(fontPath);
-      fontRegistered = true;
-      break;
+      try {
+        doc.font(fontPath);
+        fontRegistered = true;
+        console.log(`PDF using font: ${fontPath}`);
+        break;
+      } catch (e) {
+        // Font couldn't be loaded (e.g., .ttc files), try next
+        continue;
+      }
     }
   }
 
   if (!fontRegistered) {
-    console.warn('Warning: Could not find a TrueType font with UTF-8 support. Serbian characters may not display correctly.');
+    console.warn('Warning: Could not find a TrueType font with full Unicode support. Some symbols may not display correctly.');
   }
 
   // Title

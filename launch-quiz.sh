@@ -33,17 +33,21 @@ sleep 2
 # Open browser based on OS
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS - open in kiosk mode (fullscreen)
-    open -a "Google Chrome" --args --kiosk --app="http://localhost:3000" 2>/dev/null || \
-    open -a "Safari" "http://localhost:3000" 2>/dev/null || \
-    open "http://localhost:3000"
+    if [ -d "/Applications/Google Chrome.app" ]; then
+        open -a "Google Chrome" --args --kiosk "http://localhost:3000"
+    elif [ -d "/Applications/Chromium.app" ]; then
+        open -a "Chromium" --args --kiosk "http://localhost:3000"
+    else
+        open "http://localhost:3000"
+    fi
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    # Linux - try different browsers
+    # Linux - try different browsers in kiosk mode
     if command -v google-chrome &> /dev/null; then
-        google-chrome --kiosk --app="http://localhost:3000" &
+        google-chrome --kiosk "http://localhost:3000" &
     elif command -v chromium-browser &> /dev/null; then
-        chromium-browser --kiosk --app="http://localhost:3000" &
+        chromium-browser --kiosk "http://localhost:3000" &
     elif command -v chromium &> /dev/null; then
-        chromium --kiosk --app="http://localhost:3000" &
+        chromium --kiosk "http://localhost:3000" &
     elif command -v firefox &> /dev/null; then
         firefox --kiosk "http://localhost:3000" &
     else

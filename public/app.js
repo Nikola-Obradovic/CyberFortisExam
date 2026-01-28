@@ -6,6 +6,9 @@ let userInfo = {};
 let submissionId = null;
 
 // DOM elements
+const startScreen = document.getElementById('start-screen');
+const startBtn = document.getElementById('start-btn');
+const mainContainer = document.getElementById('main-container');
 const registrationForm = document.getElementById('registration-form');
 const quizSection = document.getElementById('quiz-section');
 const resultsSection = document.getElementById('results-section');
@@ -22,6 +25,9 @@ const downloadBtn = document.getElementById('download-btn');
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
+    // Start button - enters fullscreen and shows main app
+    startBtn.addEventListener('click', handleStartClick);
+
     userForm.addEventListener('submit', handleRegistrationSubmit);
     prevBtn.addEventListener('click', showPreviousQuestion);
     nextBtn.addEventListener('click', showNextQuestion);
@@ -43,7 +49,31 @@ document.addEventListener('DOMContentLoaded', () => {
             e.target.value = value;
         }
     });
+
+    // Check if already in fullscreen (kiosk mode), skip start screen
+    if (isFullscreen()) {
+        startScreen.classList.add('hidden');
+        mainContainer.classList.remove('hidden');
+    }
 });
+
+// Handle start button click
+function handleStartClick() {
+    // Request fullscreen
+    requestFullscreen();
+
+    // Hide start screen and show main container
+    startScreen.classList.add('hidden');
+    mainContainer.classList.remove('hidden');
+}
+
+// Check if browser is in fullscreen mode
+function isFullscreen() {
+    return !!(document.fullscreenElement ||
+              document.webkitFullscreenElement ||
+              document.msFullscreenElement ||
+              window.innerHeight === screen.height);
+}
 
 // Shuffle array using Fisher-Yates algorithm
 function shuffleArray(array) {
@@ -142,9 +172,6 @@ async function handleRegistrationSubmit(e) {
         // Hide registration form and show quiz
         registrationForm.classList.add('hidden');
         quizSection.classList.remove('hidden');
-
-        // Request fullscreen mode
-        requestFullscreen();
 
         // Show first question
         showQuestion(0);
