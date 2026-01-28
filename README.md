@@ -7,7 +7,7 @@ Offline quiz aplikacija za procjenu kandidata koji aplikuju za posao u Cyber For
 - Potpuno offline funkcionisanje
 - 20 pitanja iz oblasti Cybersecurity-ja
 - Mogućnost prelaska na prethodno/sledeće pitanje
-- Promjena odgovora u bilo kom trenutku
+- Promjena odgovora u bilo kom trenutkuF
 - Automatsko generisanje PDF rezultata
 - Lokalna SQLite baza podataka
 - Jednostavan web interfejs
