@@ -6,6 +6,19 @@ APP_PATH="$(cd "$(dirname "$0")/../../.." && pwd)"
 # Change to the project directory
 cd "$APP_PATH"
 
+# Load user's shell profile to get npm/node in PATH
+# This is needed because .app bundles don't inherit the shell environment
+if [ -f "$HOME/.zshrc" ]; then
+    source "$HOME/.zshrc" 2>/dev/null
+elif [ -f "$HOME/.bash_profile" ]; then
+    source "$HOME/.bash_profile" 2>/dev/null
+elif [ -f "$HOME/.bashrc" ]; then
+    source "$HOME/.bashrc" 2>/dev/null
+fi
+
+# Also add common Node.js installation paths
+export PATH="/usr/local/bin:/opt/homebrew/bin:$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node 2>/dev/null | tail -1)/bin:$PATH" 2>/dev/null
+
 # Check if node_modules exists
 if [ ! -d "node_modules" ]; then
     osascript -e 'display notification "Installing dependencies..." with title "Cyber Fortis Quiz"'
@@ -27,8 +40,13 @@ fi
 npm start &
 SERVER_PID=$!
 
-# Wait for server to start
-sleep 2
+# Wait for server to actually be ready (up to 15 seconds)
+for i in {1..15}; do
+    if curl -s http://localhost:3000 > /dev/null 2>&1; then
+        break
+    fi
+    sleep 1
+done
 
 # Open browser in kiosk mode (fullscreen)
 # Try Chrome first for best kiosk experience, then Safari

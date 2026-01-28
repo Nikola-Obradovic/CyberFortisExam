@@ -7,13 +7,20 @@
     "start": "node server.js",
     "init-db": "node init-db.js"
   },
-  "keywords": ["quiz", "offline", "cybersecurity"],
+  "keywords": [
+    "quiz",
+    "offline",
+    "cybersecurity"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "body-parser": "^1.20.2",
     "express": "^4.18.2",
-    "sqlite3": "^5.1.6",
     "pdfkit": "^0.13.0",
-    "body-parser": "^1.20.2"
+    "sqlite3": "^5.1.6"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.5"
   }
 }
