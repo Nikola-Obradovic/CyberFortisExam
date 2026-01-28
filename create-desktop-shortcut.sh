@@ -15,29 +15,71 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Detected: macOS"
     echo ""
 
-    # Convert PNG to ICNS for macOS
+    # Convert PNG to ICNS for macOS with black background
     echo "Converting logo to macOS icon format..."
 
     ICON_DIR="$SCRIPT_DIR/CyberFortisQuiz.app/Contents/Resources/AppIcon.iconset"
     mkdir -p "$ICON_DIR"
 
+    # Create a temporary logo with black background
+    TEMP_LOGO="$SCRIPT_DIR/temp_logo_with_bg.png"
+    LOGO_CREATED=false
+
+    # Method 1: Try Python with PIL
+    if command -v python3 &> /dev/null; then
+        python3 -c "from PIL import Image" 2>/dev/null && {
+            python3 << PYTHON_SCRIPT
+from PIL import Image
+logo = Image.open("$SCRIPT_DIR/public/Logo.png").convert("RGBA")
+size = max(logo.width, logo.height)
+background = Image.new("RGBA", (size, size), (0, 0, 0, 255))
+x = (size - logo.width) // 2
+y = (size - logo.height) // 2
+background.paste(logo, (x, y), logo)
+background.save("$TEMP_LOGO", "PNG")
+PYTHON_SCRIPT
+            [ -f "$TEMP_LOGO" ] && LOGO_CREATED=true && echo "Created icon with black background (using Python PIL)"
+        }
+    fi
+
+    # Method 2: Try ImageMagick
+    if [ "$LOGO_CREATED" = false ] && command -v convert &> /dev/null; then
+        convert "$SCRIPT_DIR/public/Logo.png" -background black -gravity center -extent "%[fx:max(w,h)]x%[fx:max(w,h)]" "$TEMP_LOGO" 2>/dev/null
+        [ -f "$TEMP_LOGO" ] && LOGO_CREATED=true && echo "Created icon with black background (using ImageMagick)"
+    fi
+
+    # Method 3: Try using the pre-made icon if it exists
+    if [ "$LOGO_CREATED" = false ] && [ -f "$SCRIPT_DIR/public/LogoIcon.png" ]; then
+        cp "$SCRIPT_DIR/public/LogoIcon.png" "$TEMP_LOGO"
+        LOGO_CREATED=true
+        echo "Using pre-made icon with black background"
+    fi
+
+    # Fallback: Use original logo
+    if [ "$LOGO_CREATED" = false ]; then
+        echo "Note: Could not add black background. Install PIL: pip3 install Pillow"
+        echo "      Or install ImageMagick: brew install imagemagick"
+        TEMP_LOGO="$SCRIPT_DIR/public/Logo.png"
+    fi
+
     # Create various icon sizes
-    sips -z 16 16     "$SCRIPT_DIR/public/Logo.png" --out "$ICON_DIR/icon_16x16.png" 2>/dev/null
-    sips -z 32 32     "$SCRIPT_DIR/public/Logo.png" --out "$ICON_DIR/icon_16x16@2x.png" 2>/dev/null
-    sips -z 32 32     "$SCRIPT_DIR/public/Logo.png" --out "$ICON_DIR/icon_32x32.png" 2>/dev/null
-    sips -z 64 64     "$SCRIPT_DIR/public/Logo.png" --out "$ICON_DIR/icon_32x32@2x.png" 2>/dev/null
-    sips -z 128 128   "$SCRIPT_DIR/public/Logo.png" --out "$ICON_DIR/icon_128x128.png" 2>/dev/null
-    sips -z 256 256   "$SCRIPT_DIR/public/Logo.png" --out "$ICON_DIR/icon_128x128@2x.png" 2>/dev/null
-    sips -z 256 256   "$SCRIPT_DIR/public/Logo.png" --out "$ICON_DIR/icon_256x256.png" 2>/dev/null
-    sips -z 512 512   "$SCRIPT_DIR/public/Logo.png" --out "$ICON_DIR/icon_256x256@2x.png" 2>/dev/null
-    sips -z 512 512   "$SCRIPT_DIR/public/Logo.png" --out "$ICON_DIR/icon_512x512.png" 2>/dev/null
-    sips -z 1024 1024 "$SCRIPT_DIR/public/Logo.png" --out "$ICON_DIR/icon_512x512@2x.png" 2>/dev/null
+    sips -z 16 16     "$TEMP_LOGO" --out "$ICON_DIR/icon_16x16.png" 2>/dev/null
+    sips -z 32 32     "$TEMP_LOGO" --out "$ICON_DIR/icon_16x16@2x.png" 2>/dev/null
+    sips -z 32 32     "$TEMP_LOGO" --out "$ICON_DIR/icon_32x32.png" 2>/dev/null
+    sips -z 64 64     "$TEMP_LOGO" --out "$ICON_DIR/icon_32x32@2x.png" 2>/dev/null
+    sips -z 128 128   "$TEMP_LOGO" --out "$ICON_DIR/icon_128x128.png" 2>/dev/null
+    sips -z 256 256   "$TEMP_LOGO" --out "$ICON_DIR/icon_128x128@2x.png" 2>/dev/null
+    sips -z 256 256   "$TEMP_LOGO" --out "$ICON_DIR/icon_256x256.png" 2>/dev/null
+    sips -z 512 512   "$TEMP_LOGO" --out "$ICON_DIR/icon_256x256@2x.png" 2>/dev/null
+    sips -z 512 512   "$TEMP_LOGO" --out "$ICON_DIR/icon_512x512.png" 2>/dev/null
+    sips -z 1024 1024 "$TEMP_LOGO" --out "$ICON_DIR/icon_512x512@2x.png" 2>/dev/null
 
     # Convert iconset to icns
     iconutil -c icns "$ICON_DIR" -o "$SCRIPT_DIR/CyberFortisQuiz.app/Contents/Resources/AppIcon.icns" 2>/dev/null
 
-    # Clean up iconset folder
+    # Clean up
     rm -rf "$ICON_DIR"
+    [ -f "$SCRIPT_DIR/temp_logo_with_bg.png" ] && rm "$SCRIPT_DIR/temp_logo_with_bg.png"
 
     # Remove quarantine attribute to bypass Gatekeeper warning
     echo "Removing macOS quarantine attribute..."
