@@ -85,6 +85,10 @@ PYTHON_SCRIPT
     echo "Removing macOS quarantine attribute..."
     xattr -cr "$SCRIPT_DIR/CyberFortisQuiz.app"
 
+    # Write the project path to the app bundle so it knows where to find the project files
+    echo "Configuring project path..."
+    echo "$SCRIPT_DIR" > "$SCRIPT_DIR/CyberFortisQuiz.app/Contents/project_path"
+
     # Copy app to Applications folder
     echo "Installing application..."
     cp -R "$SCRIPT_DIR/CyberFortisQuiz.app" "/Applications/Cyber Fortis Quiz.app"

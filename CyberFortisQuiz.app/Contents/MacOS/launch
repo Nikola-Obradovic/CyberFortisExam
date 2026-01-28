@@ -1,10 +1,24 @@
 #!/bin/bash
 
-# Get the directory where the .app bundle is located
-APP_PATH="$(cd "$(dirname "$0")/../../.." && pwd)"
+# Get the path to the .app bundle's Contents directory
+CONTENTS_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Check if project path is configured (set during installation)
+if [ -f "$CONTENTS_DIR/project_path" ]; then
+    PROJECT_PATH="$(cat "$CONTENTS_DIR/project_path")"
+else
+    # Fallback: assume app is in the project directory (development mode)
+    PROJECT_PATH="$(cd "$(dirname "$0")/../../.." && pwd)"
+fi
+
+# Verify the project directory exists
+if [ ! -d "$PROJECT_PATH" ] || [ ! -f "$PROJECT_PATH/server.js" ]; then
+    osascript -e 'display alert "Project not found" message "The quiz project directory could not be found. Please reinstall the application by running ./create-desktop-shortcut.sh from the project folder." as critical'
+    exit 1
+fi
 
 # Change to the project directory
-cd "$APP_PATH"
+cd "$PROJECT_PATH"
 
 # Load user's shell profile to get npm/node in PATH
 # This is needed because .app bundles don't inherit the shell environment
@@ -53,7 +67,7 @@ if [ ! -d "results" ]; then
 fi
 
 # Start server in background and log output for debugging
-npm start > "$APP_PATH/.server.log" 2>&1 &
+npm start > "$PROJECT_PATH/.server.log" 2>&1 &
 SERVER_PID=$!
 
 # Wait for server to actually be ready (up to 30 seconds)
