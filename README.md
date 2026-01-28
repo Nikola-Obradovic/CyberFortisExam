@@ -11,6 +11,9 @@ Offline quiz aplikacija za procjenu kandidata koji aplikuju za posao u Cyber For
 - Automatsko generisanje PDF rezultata
 - Lokalna SQLite baza podataka
 - Jednostavan web interfejs
+- **Desktop launcher** - Pokretanje aplikacije jednim klikom (Windows, macOS, Linux)
+- **Fullscreen mod** - Automatski fullscreen za fokusiranje kandidata
+- **Auto-zatvaranje** - Browser se automatski zatvara nakon završetka kviza
 
 ## Brzo pokretanje (Quick Start)
 
@@ -163,14 +166,26 @@ CyberFortisExam/
 ├── public/                  # Frontend fajlovi
 │   ├── index.html          # Glavni HTML fajl
 │   ├── styles.css          # Stilovi
-│   └── app.js              # JavaScript logika
+│   ├── app.js              # JavaScript logika
+│   └── Logo.png            # Logo aplikacije
 │
 ├── results/                # PDF rezultati se čuvaju ovdje
+│
+├── CyberFortisQuiz.app/    # macOS aplikacija
 │
 ├── server.js               # Express server
 ├── init-db.js              # Script za inicijalizaciju baze
 ├── package.json            # npm zavisnosti
 ├── quiz.db                 # SQLite baza podataka (kreira se nakon init-db)
+│
+├── start.sh                # Jednostavno pokretanje (Linux/macOS)
+├── start.bat               # Jednostavno pokretanje (Windows)
+├── launch-quiz.sh          # Pokretač sa browserom (Linux/macOS)
+├── launch-quiz.bat         # Pokretač sa browserom (Windows)
+├── launch-quiz.vbs         # Pokretač bez konzole (Windows)
+├── create-desktop-shortcut.sh   # Kreiranje prečice (Linux/macOS)
+├── create-desktop-shortcut.bat  # Kreiranje prečice (Windows)
+│
 └── README.md               # Ova dokumentacija
 ```
 
@@ -412,6 +427,65 @@ Ova aplikacija je dizajnirana za **lokalno korištenje**:
 - Nema autentifikacije korisnika
 - Nema enkripcije podataka
 - Ne bi trebala biti izložena na internetu bez dodatnih sigurnosnih mjera
+
+## Desktop Launcher (Pokretač)
+
+Aplikacija uključuje desktop pokretače za sve platforme koji omogućavaju jednostavno pokretanje kviza jednim klikom.
+
+### Karakteristike pokretača
+
+- **Automatsko pokretanje servera** - Server se pokreće u pozadini
+- **Fullscreen mod** - Browser se otvara u fullscreen modu za fokusiranje kandidata
+- **Automatsko zatvaranje** - Nakon završetka kviza, browser se automatski zatvara nakon 3 sekunde
+
+### Kreiranje desktop prečice
+
+#### macOS:
+```bash
+chmod +x create-desktop-shortcut.sh
+./create-desktop-shortcut.sh
+```
+Ovo će:
+- Kreirati macOS aplikaciju sa ikonom
+- Instalirati je u Applications folder
+- Kreirati prečicu na Desktop-u
+
+#### Linux:
+```bash
+chmod +x create-desktop-shortcut.sh
+./create-desktop-shortcut.sh
+```
+Ovo će:
+- Kreirati .desktop fajl u `~/.local/share/applications/`
+- Kreirati prečicu na Desktop-u
+
+**Napomena**: Na nekim Linux distribucijama potrebno je desnim klikom na ikonu odabrati "Allow Launching" ili "Trust and Launch".
+
+#### Windows:
+```cmd
+create-desktop-shortcut.bat
+```
+Ovo će kreirati prečicu na Desktop-u sa ikonom aplikacije.
+
+### Ručno pokretanje
+
+Ako ne želite koristiti desktop prečicu, možete pokrenuti aplikaciju ručno:
+
+#### macOS/Linux:
+```bash
+./launch-quiz.sh
+```
+
+#### Windows:
+Dvostruki klik na `launch-quiz.vbs` (pokreće bez vidljive konzole)
+ili
+```cmd
+launch-quiz.bat
+```
+
+### Preporučeni browser
+
+Za najbolje iskustvo u kiosk/fullscreen modu, preporučuje se **Google Chrome** ili **Chromium**. Safari i Firefox takođe rade, ali bez pune kiosk podrške.
 
 ## Budući razvoj
 

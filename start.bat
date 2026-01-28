@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo   AlemSISTEM Quiz Aplikacija
+echo   Cyber Fortis Quiz Aplikacija
 echo ========================================
 echo.
 

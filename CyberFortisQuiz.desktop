@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Cyber Fortis Quiz
+Comment=Quiz aplikacija za zapošljavanje
+Exec=bash -c "cd '%k/../' && ./launch-quiz.sh"
+Icon=%k/../public/Logo.png
+Terminal=false
+Categories=Education;
+StartupNotify=true

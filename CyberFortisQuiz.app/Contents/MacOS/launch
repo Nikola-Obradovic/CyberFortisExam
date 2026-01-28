@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Get the directory where the .app bundle is located
+APP_PATH="$(cd "$(dirname "$0")/../../.." && pwd)"
+
+# Change to the project directory
+cd "$APP_PATH"
+
+# Check if node_modules exists
+if [ ! -d "node_modules" ]; then
+    osascript -e 'display notification "Installing dependencies..." with title "Cyber Fortis Quiz"'
+    npm install
+fi
+
+# Check if database exists
+if [ ! -f "quiz.db" ]; then
+    osascript -e 'display notification "Initializing database..." with title "Cyber Fortis Quiz"'
+    npm run init-db
+fi
+
+# Create results directory if it doesn't exist
+if [ ! -d "results" ]; then
+    mkdir -p results
+fi
+
+# Start server in background
+npm start &
+SERVER_PID=$!
+
+# Wait for server to start
+sleep 2
+
+# Open browser in app mode (kiosk-like)
+# Try Chrome first for best kiosk experience, then Safari
+if [ -d "/Applications/Google Chrome.app" ]; then
+    open -a "Google Chrome" --args --kiosk --app="http://localhost:3000"
+elif [ -d "/Applications/Chromium.app" ]; then
+    open -a "Chromium" --args --kiosk --app="http://localhost:3000"
+else
+    # Safari doesn't support kiosk mode, but will still work
+    open -a "Safari" "http://localhost:3000"
+fi
+
+# Wait for server process
+wait $SERVER_PID

@@ -67,6 +67,33 @@ function isValidPhone(phone) {
     return phoneRegex.test(phone);
 }
 
+// Request fullscreen mode
+function requestFullscreen() {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(err => {
+            console.log('Fullscreen request failed:', err);
+        });
+    } else if (elem.webkitRequestFullscreen) { // Safari
+        elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) { // IE11
+        elem.msRequestFullscreen();
+    }
+}
+
+// Exit fullscreen mode
+function exitFullscreen() {
+    if (document.exitFullscreen) {
+        document.exitFullscreen().catch(err => {
+            console.log('Exit fullscreen failed:', err);
+        });
+    } else if (document.webkitExitFullscreen) { // Safari
+        document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) { // IE11
+        document.msExitFullscreen();
+    }
+}
+
 // Handle registration form submission
 async function handleRegistrationSubmit(e) {
     e.preventDefault();
@@ -115,6 +142,9 @@ async function handleRegistrationSubmit(e) {
         // Hide registration form and show quiz
         registrationForm.classList.add('hidden');
         quizSection.classList.remove('hidden');
+
+        // Request fullscreen mode
+        requestFullscreen();
 
         // Show first question
         showQuestion(0);
@@ -301,6 +331,18 @@ async function handleQuizSubmit() {
 function showResults(result) {
     quizSection.classList.add('hidden');
     resultsSection.classList.remove('hidden');
+
+    // Exit fullscreen and close browser after 3 seconds
+    setTimeout(() => {
+        exitFullscreen();
+        // Try to close the window (works when opened by script)
+        window.close();
+        // If window.close() doesn't work, redirect to a blank page
+        // This helps indicate the quiz is complete
+        setTimeout(() => {
+            window.location.href = 'about:blank';
+        }, 500);
+    }, 3000);
 }
 
 // Download PDF
