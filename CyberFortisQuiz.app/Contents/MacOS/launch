@@ -66,23 +66,33 @@ if [ ! -d "results" ]; then
     mkdir -p results
 fi
 
-# Start server in background and log output for debugging
-npm start > "$PROJECT_PATH/.server.log" 2>&1 &
-SERVER_PID=$!
+# Check if server is already running on port 3000
+if curl -s http://127.0.0.1:3000 > /dev/null 2>&1; then
+    SERVER_READY=true
+else
+    # Start server in background and log output for debugging
+    # Use nohup and disown to fully detach the server from this script
+    nohup npm start > "$PROJECT_PATH/.server.log" 2>&1 &
+    SERVER_PID=$!
+    disown $SERVER_PID
 
-# Wait for server to actually be ready (up to 30 seconds)
-SERVER_READY=false
-for i in {1..30}; do
-    if curl -s http://127.0.0.1:3000 > /dev/null 2>&1; then
-        SERVER_READY=true
-        break
-    fi
-    # Check if server process died
-    if ! kill -0 $SERVER_PID 2>/dev/null; then
-        break
-    fi
-    sleep 1
-done
+    # Save PID for potential cleanup later
+    echo $SERVER_PID > "$PROJECT_PATH/.server.pid"
+
+    # Wait for server to actually be ready (up to 30 seconds)
+    SERVER_READY=false
+    for i in {1..30}; do
+        if curl -s http://127.0.0.1:3000 > /dev/null 2>&1; then
+            SERVER_READY=true
+            break
+        fi
+        # Check if server process died
+        if ! kill -0 $SERVER_PID 2>/dev/null; then
+            break
+        fi
+        sleep 1
+    done
+fi
 
 # Only open browser if server is running
 if [ "$SERVER_READY" = true ]; then
@@ -98,11 +108,11 @@ if [ "$SERVER_READY" = true ]; then
         # Safari - open URL directly
         open "http://127.0.0.1:3000"
     fi
+
+    # Exit successfully - server runs independently, Chrome is open
+    exit 0
 else
     # Server failed to start - show error
     osascript -e 'display alert "Server failed to start" message "Check if Node.js is installed correctly. Try running ./start.sh from Terminal instead." as critical'
     exit 1
 fi
-
-# Wait for server process
-wait $SERVER_PID
