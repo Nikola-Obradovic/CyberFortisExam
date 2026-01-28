@@ -97,19 +97,20 @@ fi
 # Only open browser if server is running
 if [ "$SERVER_READY" = true ]; then
     # Open browser in kiosk mode (fullscreen)
-    # Try Chrome/Firefox first for best experience, then Safari
-    if [ -d "/Applications/Google Chrome.app" ]; then
+    # Firefox uses -kiosk (single dash), Chrome uses --kiosk (double dash)
+    if [ -d "/Applications/Firefox.app" ]; then
+        # Firefox: use -kiosk flag and pass URL directly
+        /Applications/Firefox.app/Contents/MacOS/firefox -kiosk "http://127.0.0.1:3000" &
+    elif [ -d "/Applications/Google Chrome.app" ]; then
         open -a "Google Chrome" --args --kiosk "http://127.0.0.1:3000"
-    elif [ -d "/Applications/Firefox.app" ]; then
-        open -a "Firefox" --args --kiosk "http://127.0.0.1:3000"
     elif [ -d "/Applications/Chromium.app" ]; then
         open -a "Chromium" --args --kiosk "http://127.0.0.1:3000"
     else
-        # Safari - open URL directly
+        # Safari - open URL directly (no kiosk mode available)
         open "http://127.0.0.1:3000"
     fi
 
-    # Exit successfully - server runs independently, Chrome is open
+    # Exit successfully - server runs independently, browser is open
     exit 0
 else
     # Server failed to start - show error
