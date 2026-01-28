@@ -42,7 +42,7 @@ SERVER_PID=$!
 
 # Wait for server to actually be ready (up to 15 seconds)
 for i in {1..15}; do
-    if curl -s http://localhost:3000 > /dev/null 2>&1; then
+    if curl -s http://127.0.0.1:3000 > /dev/null 2>&1; then
         break
     fi
     sleep 1
@@ -51,12 +51,12 @@ done
 # Open browser in kiosk mode (fullscreen)
 # Try Chrome first for best kiosk experience, then Safari
 if [ -d "/Applications/Google Chrome.app" ]; then
-    open -a "Google Chrome" --args --kiosk "http://localhost:3000"
+    open -a "Google Chrome" --args --kiosk "http://127.0.0.1:3000"
 elif [ -d "/Applications/Chromium.app" ]; then
-    open -a "Chromium" --args --kiosk "http://localhost:3000"
+    open -a "Chromium" --args --kiosk "http://127.0.0.1:3000"
 else
     # Safari doesn't support kiosk mode, but will still work
-    open -a "Safari" "http://localhost:3000"
+    open -a "Safari" "http://127.0.0.1:3000"
 fi
 
 # Wait for server process

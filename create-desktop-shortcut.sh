@@ -25,8 +25,15 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     TEMP_LOGO="$SCRIPT_DIR/temp_logo_with_bg.png"
     LOGO_CREATED=false
 
-    # Method 1: Try Python with PIL
-    if command -v python3 &> /dev/null; then
+    # Method 1: Use pre-made icon with black background (preferred)
+    if [ -f "$SCRIPT_DIR/public/LogoIcon.png" ]; then
+        cp "$SCRIPT_DIR/public/LogoIcon.png" "$TEMP_LOGO"
+        LOGO_CREATED=true
+        echo "Using pre-made icon with black background"
+    fi
+
+    # Method 2: Try Python with PIL
+    if [ "$LOGO_CREATED" = false ] && command -v python3 &> /dev/null; then
         python3 -c "from PIL import Image" 2>/dev/null && {
             python3 << PYTHON_SCRIPT
 from PIL import Image
@@ -42,23 +49,16 @@ PYTHON_SCRIPT
         }
     fi
 
-    # Method 2: Try ImageMagick
+    # Method 3: Try ImageMagick
     if [ "$LOGO_CREATED" = false ] && command -v convert &> /dev/null; then
         convert "$SCRIPT_DIR/public/Logo.png" -background black -gravity center -extent "%[fx:max(w,h)]x%[fx:max(w,h)]" "$TEMP_LOGO" 2>/dev/null
         [ -f "$TEMP_LOGO" ] && LOGO_CREATED=true && echo "Created icon with black background (using ImageMagick)"
     fi
 
-    # Method 3: Try using the pre-made icon if it exists
-    if [ "$LOGO_CREATED" = false ] && [ -f "$SCRIPT_DIR/public/LogoIcon.png" ]; then
-        cp "$SCRIPT_DIR/public/LogoIcon.png" "$TEMP_LOGO"
-        LOGO_CREATED=true
-        echo "Using pre-made icon with black background"
-    fi
-
-    # Fallback: Use original logo
+    # Fallback: Use original logo (will have transparent/gray background)
     if [ "$LOGO_CREATED" = false ]; then
-        echo "Note: Could not add black background. Install PIL: pip3 install Pillow"
-        echo "      Or install ImageMagick: brew install imagemagick"
+        echo "Warning: Could not create black background icon."
+        echo "         Run 'node create-icon.js' first to generate LogoIcon.png"
         TEMP_LOGO="$SCRIPT_DIR/public/Logo.png"
     fi
 
@@ -91,6 +91,16 @@ PYTHON_SCRIPT
 
     # Remove quarantine from installed app as well
     xattr -cr "/Applications/Cyber Fortis Quiz.app"
+
+    # Clear icon cache to force macOS to use new icon
+    echo "Clearing icon cache..."
+    sudo rm -rf /Library/Caches/com.apple.iconservices.store 2>/dev/null
+    rm -rf ~/Library/Caches/com.apple.iconservices.store 2>/dev/null
+    killall Finder 2>/dev/null
+    killall Dock 2>/dev/null
+
+    # Touch the app to update modification time (helps with icon refresh)
+    touch "/Applications/Cyber Fortis Quiz.app"
 
     # Create alias on Desktop
     echo "Creating desktop shortcut..."
