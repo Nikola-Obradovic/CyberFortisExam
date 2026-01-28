@@ -39,9 +39,16 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     # Clean up iconset folder
     rm -rf "$ICON_DIR"
 
+    # Remove quarantine attribute to bypass Gatekeeper warning
+    echo "Removing macOS quarantine attribute..."
+    xattr -cr "$SCRIPT_DIR/CyberFortisQuiz.app"
+
     # Copy app to Applications folder
     echo "Installing application..."
     cp -R "$SCRIPT_DIR/CyberFortisQuiz.app" "/Applications/Cyber Fortis Quiz.app"
+
+    # Remove quarantine from installed app as well
+    xattr -cr "/Applications/Cyber Fortis Quiz.app"
 
     # Create alias on Desktop
     echo "Creating desktop shortcut..."
