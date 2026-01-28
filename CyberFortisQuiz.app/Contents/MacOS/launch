@@ -8,16 +8,32 @@ cd "$APP_PATH"
 
 # Load user's shell profile to get npm/node in PATH
 # This is needed because .app bundles don't inherit the shell environment
+export HOME="${HOME:-/Users/$(whoami)}"
+if [ -f "$HOME/.zprofile" ]; then
+    source "$HOME/.zprofile" 2>/dev/null
+fi
 if [ -f "$HOME/.zshrc" ]; then
     source "$HOME/.zshrc" 2>/dev/null
 elif [ -f "$HOME/.bash_profile" ]; then
     source "$HOME/.bash_profile" 2>/dev/null
+elif [ -f "$HOME/.profile" ]; then
+    source "$HOME/.profile" 2>/dev/null
 elif [ -f "$HOME/.bashrc" ]; then
     source "$HOME/.bashrc" 2>/dev/null
 fi
 
-# Also add common Node.js installation paths
-export PATH="/usr/local/bin:/opt/homebrew/bin:$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node 2>/dev/null | tail -1)/bin:$PATH" 2>/dev/null
+# Add common Node.js installation paths (Homebrew Intel, Homebrew Apple Silicon, nvm, volta, fnm)
+export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
+[ -d "$HOME/.nvm" ] && export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh" 2>/dev/null
+[ -d "$HOME/.volta" ] && export PATH="$HOME/.volta/bin:$PATH"
+[ -d "$HOME/.fnm" ] && export PATH="$HOME/.fnm:$PATH"
+[ -d "$HOME/.local/bin" ] && export PATH="$HOME/.local/bin:$PATH"
+
+# Verify node and npm are available
+if ! command -v node &> /dev/null; then
+    osascript -e 'display alert "Node.js not found" message "Please install Node.js or run the app from Terminal using ./start.sh" as critical'
+    exit 1
+fi
 
 # Check if node_modules exists
 if [ ! -d "node_modules" ]; then
@@ -36,27 +52,42 @@ if [ ! -d "results" ]; then
     mkdir -p results
 fi
 
-# Start server in background
-npm start &
+# Start server in background and log output for debugging
+npm start > "$APP_PATH/.server.log" 2>&1 &
 SERVER_PID=$!
 
-# Wait for server to actually be ready (up to 15 seconds)
-for i in {1..15}; do
+# Wait for server to actually be ready (up to 30 seconds)
+SERVER_READY=false
+for i in {1..30}; do
     if curl -s http://127.0.0.1:3000 > /dev/null 2>&1; then
+        SERVER_READY=true
+        break
+    fi
+    # Check if server process died
+    if ! kill -0 $SERVER_PID 2>/dev/null; then
         break
     fi
     sleep 1
 done
 
-# Open browser in kiosk mode (fullscreen)
-# Try Chrome first for best kiosk experience, then Safari
-if [ -d "/Applications/Google Chrome.app" ]; then
-    open -a "Google Chrome" --args --kiosk "http://127.0.0.1:3000"
-elif [ -d "/Applications/Chromium.app" ]; then
-    open -a "Chromium" --args --kiosk "http://127.0.0.1:3000"
+# Only open browser if server is running
+if [ "$SERVER_READY" = true ]; then
+    # Open browser in kiosk mode (fullscreen)
+    # Try Chrome/Firefox first for best experience, then Safari
+    if [ -d "/Applications/Google Chrome.app" ]; then
+        open -a "Google Chrome" --args --kiosk "http://127.0.0.1:3000"
+    elif [ -d "/Applications/Firefox.app" ]; then
+        open -a "Firefox" --args --kiosk "http://127.0.0.1:3000"
+    elif [ -d "/Applications/Chromium.app" ]; then
+        open -a "Chromium" --args --kiosk "http://127.0.0.1:3000"
+    else
+        # Safari - open URL directly
+        open "http://127.0.0.1:3000"
+    fi
 else
-    # Safari doesn't support kiosk mode, but will still work
-    open -a "Safari" "http://127.0.0.1:3000"
+    # Server failed to start - show error
+    osascript -e 'display alert "Server failed to start" message "Check if Node.js is installed correctly. Try running ./start.sh from Terminal instead." as critical'
+    exit 1
 fi
 
 # Wait for server process
