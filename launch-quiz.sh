@@ -6,6 +6,18 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# Load environment variables from .env file if it exists
+if [ -f ".env" ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
+# Check if CMS credentials are set
+if [ -z "$CMS_USERNAME" ] || [ -z "$CMS_PASSWORD" ]; then
+    echo "ERROR: CMS credentials not found."
+    echo "Please create a .env file with CMS_USERNAME and CMS_PASSWORD"
+    exit 1
+fi
+
 # Check if node_modules exists
 if [ ! -d "node_modules" ]; then
     echo "Installing dependencies..."

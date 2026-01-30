@@ -6,6 +6,27 @@ REM This script starts the server and opens the browser
 
 cd /d "%~dp0"
 
+REM Load environment variables from .env file
+if exist ".env" (
+    for /f "usebackq tokens=1,* delims==" %%a in (".env") do (
+        if not "%%a"=="" if not "%%a:~0,1%"=="#" (
+            set "%%a=%%b"
+        )
+    )
+)
+
+REM Check if CMS credentials are set
+if "%CMS_USERNAME%"=="" (
+    echo ERROR: CMS_USERNAME not set. Create a .env file with CMS_USERNAME and CMS_PASSWORD
+    pause
+    exit /b 1
+)
+if "%CMS_PASSWORD%"=="" (
+    echo ERROR: CMS_PASSWORD not set. Create a .env file with CMS_USERNAME and CMS_PASSWORD
+    pause
+    exit /b 1
+)
+
 REM Check if node_modules exists
 if not exist "node_modules" (
     echo Installing dependencies...

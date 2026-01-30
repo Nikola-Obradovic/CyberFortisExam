@@ -2,3 +2,4 @@ node_modules/
 *.db
 results/*.pdf
 .DS_Store
+.env

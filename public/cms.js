@@ -1,0 +1,391 @@
+// CMS JavaScript for Cyber Fortis Question Management
+
+// State
+let questions = [];
+let currentQuestionId = null;
+
+// DOM Elements
+const loginSection = document.getElementById('login-section');
+const cmsSection = document.getElementById('cms-section');
+const loginForm = document.getElementById('login-form');
+const loginError = document.getElementById('login-error');
+const logoutBtn = document.getElementById('logout-btn');
+const questionList = document.getElementById('question-list');
+const questionForm = document.getElementById('question-form');
+const editorPlaceholder = document.getElementById('editor-placeholder');
+const addQuestionBtn = document.getElementById('add-question-btn');
+const cancelBtn = document.getElementById('cancel-btn');
+const deleteBtn = document.getElementById('delete-btn');
+const formTitle = document.getElementById('form-title');
+const formMessage = document.getElementById('form-message');
+const viewSubmissionsBtn = document.getElementById('view-submissions-btn');
+const submissionsModal = document.getElementById('submissions-modal');
+const deleteModal = document.getElementById('delete-modal');
+const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuthStatus();
+    setupEventListeners();
+});
+
+// Check if user is authenticated
+async function checkAuthStatus() {
+    try {
+        const response = await fetch('/api/cms/auth-status');
+        const data = await response.json();
+
+        if (data.authenticated) {
+            showCMS();
+            loadQuestions();
+        } else {
+            showLogin();
+        }
+    } catch (error) {
+        console.error('Error checking auth status:', error);
+        showLogin();
+    }
+}
+
+// Setup Event Listeners
+function setupEventListeners() {
+    // Login form
+    loginForm.addEventListener('submit', handleLogin);
+
+    // Logout
+    logoutBtn.addEventListener('click', handleLogout);
+
+    // Add new question
+    addQuestionBtn.addEventListener('click', () => showQuestionForm(null));
+
+    // Cancel editing
+    cancelBtn.addEventListener('click', hideQuestionForm);
+
+    // Question form submission
+    questionForm.addEventListener('submit', handleQuestionSubmit);
+
+    // Delete button
+    deleteBtn.addEventListener('click', () => showDeleteModal());
+
+    // Confirm delete
+    confirmDeleteBtn.addEventListener('click', handleDelete);
+
+    // View submissions
+    viewSubmissionsBtn.addEventListener('click', showSubmissions);
+
+    // Modal close buttons
+    document.querySelectorAll('.modal-close').forEach(btn => {
+        btn.addEventListener('click', () => {
+            submissionsModal.style.display = 'none';
+            deleteModal.style.display = 'none';
+        });
+    });
+
+    // Close modals on outside click
+    window.addEventListener('click', (e) => {
+        if (e.target === submissionsModal) submissionsModal.style.display = 'none';
+        if (e.target === deleteModal) deleteModal.style.display = 'none';
+    });
+}
+
+// Handle Login
+async function handleLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    try {
+        const response = await fetch('/api/cms/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showCMS();
+            loadQuestions();
+            loginForm.reset();
+            loginError.textContent = '';
+        } else {
+            loginError.textContent = data.error || 'Login failed';
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        loginError.textContent = 'Connection error. Please try again.';
+    }
+}
+
+// Handle Logout
+async function handleLogout() {
+    try {
+        await fetch('/api/cms/logout', { method: 'POST' });
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
+    showLogin();
+}
+
+// Show/Hide Sections
+function showLogin() {
+    loginSection.style.display = 'flex';
+    cmsSection.style.display = 'none';
+}
+
+function showCMS() {
+    loginSection.style.display = 'none';
+    cmsSection.style.display = 'flex';
+}
+
+// Load Questions
+async function loadQuestions() {
+    try {
+        const response = await fetch('/api/cms/questions');
+
+        if (response.status === 401) {
+            showLogin();
+            return;
+        }
+
+        questions = await response.json();
+        renderQuestionList();
+    } catch (error) {
+        console.error('Error loading questions:', error);
+    }
+}
+
+// Render Question List
+function renderQuestionList() {
+    questionList.innerHTML = '';
+
+    questions.forEach(q => {
+        const item = document.createElement('div');
+        item.className = 'question-item' + (q.id === currentQuestionId ? ' active' : '');
+        item.dataset.id = q.id;
+        item.innerHTML = `
+            <div class="question-number">Question ${q.order_num}</div>
+            <div class="question-preview">${escapeHtml(q.question_text)}</div>
+        `;
+        item.addEventListener('click', () => showQuestionForm(q.id));
+        questionList.appendChild(item);
+    });
+}
+
+// Show Question Form
+function showQuestionForm(questionId) {
+    currentQuestionId = questionId;
+    editorPlaceholder.style.display = 'none';
+    questionForm.style.display = 'block';
+    formMessage.style.display = 'none';
+
+    // Update active state in list
+    document.querySelectorAll('.question-item').forEach(item => {
+        item.classList.toggle('active', parseInt(item.dataset.id) === questionId);
+    });
+
+    if (questionId) {
+        // Edit existing question
+        formTitle.textContent = 'Edit Question';
+        deleteBtn.style.display = 'block';
+
+        const question = questions.find(q => q.id === questionId);
+        if (question) {
+            document.getElementById('question-id').value = question.id;
+            document.getElementById('order-num').value = question.order_num;
+            document.getElementById('question-text').value = question.question_text;
+            document.getElementById('option-a').value = question.option_a;
+            document.getElementById('option-b').value = question.option_b;
+            document.getElementById('option-c').value = question.option_c;
+            document.getElementById('option-d').value = question.option_d;
+
+            // Set correct answer radio
+            const correctRadio = document.querySelector(`input[name="correct_answer"][value="${question.correct_answer}"]`);
+            if (correctRadio) correctRadio.checked = true;
+        }
+    } else {
+        // New question
+        formTitle.textContent = 'Add New Question';
+        deleteBtn.style.display = 'none';
+        questionForm.reset();
+        document.getElementById('question-id').value = '';
+
+        // Set default order number
+        const maxOrder = questions.reduce((max, q) => Math.max(max, q.order_num), 0);
+        document.getElementById('order-num').value = maxOrder + 1;
+    }
+}
+
+// Hide Question Form
+function hideQuestionForm() {
+    currentQuestionId = null;
+    editorPlaceholder.style.display = 'flex';
+    questionForm.style.display = 'none';
+    formMessage.style.display = 'none';
+
+    // Remove active state from list
+    document.querySelectorAll('.question-item').forEach(item => {
+        item.classList.remove('active');
+    });
+}
+
+// Handle Question Submit
+async function handleQuestionSubmit(e) {
+    e.preventDefault();
+
+    const questionId = document.getElementById('question-id').value;
+    const correctAnswer = document.querySelector('input[name="correct_answer"]:checked');
+
+    if (!correctAnswer) {
+        showFormMessage('Please select the correct answer', 'error');
+        return;
+    }
+
+    const questionData = {
+        question_text: document.getElementById('question-text').value.trim(),
+        option_a: document.getElementById('option-a').value.trim(),
+        option_b: document.getElementById('option-b').value.trim(),
+        option_c: document.getElementById('option-c').value.trim(),
+        option_d: document.getElementById('option-d').value.trim(),
+        correct_answer: correctAnswer.value,
+        order_num: parseInt(document.getElementById('order-num').value)
+    };
+
+    try {
+        const url = questionId
+            ? `/api/cms/questions/${questionId}`
+            : '/api/cms/questions';
+
+        const method = questionId ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(questionData)
+        });
+
+        if (response.status === 401) {
+            showLogin();
+            return;
+        }
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showFormMessage(data.message || 'Question saved successfully', 'success');
+            await loadQuestions();
+
+            // If new question, select it
+            if (!questionId && data.id) {
+                currentQuestionId = data.id;
+                document.getElementById('question-id').value = data.id;
+                formTitle.textContent = 'Edit Question';
+                deleteBtn.style.display = 'block';
+            }
+
+            // Re-render to show updated active state
+            renderQuestionList();
+        } else {
+            showFormMessage(data.error || 'Failed to save question', 'error');
+        }
+    } catch (error) {
+        console.error('Error saving question:', error);
+        showFormMessage('Connection error. Please try again.', 'error');
+    }
+}
+
+// Show Delete Modal
+function showDeleteModal() {
+    deleteModal.style.display = 'flex';
+}
+
+// Handle Delete
+async function handleDelete() {
+    if (!currentQuestionId) return;
+
+    try {
+        const response = await fetch(`/api/cms/questions/${currentQuestionId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.status === 401) {
+            showLogin();
+            return;
+        }
+
+        const data = await response.json();
+
+        if (response.ok) {
+            deleteModal.style.display = 'none';
+            hideQuestionForm();
+            await loadQuestions();
+        } else {
+            alert(data.error || 'Failed to delete question');
+        }
+    } catch (error) {
+        console.error('Error deleting question:', error);
+        alert('Connection error. Please try again.');
+    }
+}
+
+// Show Submissions
+async function showSubmissions() {
+    try {
+        const response = await fetch('/api/cms/submissions');
+
+        if (response.status === 401) {
+            showLogin();
+            return;
+        }
+
+        const submissions = await response.json();
+        const tbody = document.querySelector('#submissions-table tbody');
+        tbody.innerHTML = '';
+
+        if (submissions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666;">No submissions yet</td></tr>';
+        } else {
+            submissions.forEach(sub => {
+                const scoreClass = sub.score >= 70 ? 'score-high' : (sub.score >= 50 ? 'score-medium' : 'score-low');
+                const date = new Date(sub.submission_date).toLocaleString();
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${sub.id}</td>
+                    <td>${escapeHtml(sub.first_name)} ${escapeHtml(sub.last_name)}</td>
+                    <td>${escapeHtml(sub.email)}</td>
+                    <td>${escapeHtml(sub.phone)}</td>
+                    <td class="${scoreClass}">${sub.score.toFixed(1)}%</td>
+                    <td>${date}</td>
+                    <td><a href="/api/download/${sub.id}" target="_blank">Download</a></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        submissionsModal.style.display = 'flex';
+    } catch (error) {
+        console.error('Error loading submissions:', error);
+        alert('Failed to load submissions');
+    }
+}
+
+// Show Form Message
+function showFormMessage(message, type) {
+    formMessage.textContent = message;
+    formMessage.className = 'form-message ' + type;
+    formMessage.style.display = 'block';
+
+    if (type === 'success') {
+        setTimeout(() => {
+            formMessage.style.display = 'none';
+        }, 3000);
+    }
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}

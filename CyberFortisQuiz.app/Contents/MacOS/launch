@@ -20,6 +20,17 @@ fi
 # Change to the project directory
 cd "$PROJECT_PATH"
 
+# Load environment variables from .env file if it exists
+if [ -f ".env" ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
+# Check if CMS credentials are set
+if [ -z "$CMS_USERNAME" ] || [ -z "$CMS_PASSWORD" ]; then
+    osascript -e 'display alert "CMS credentials not configured" message "Please create a .env file with CMS_USERNAME and CMS_PASSWORD in the project directory." as critical'
+    exit 1
+fi
+
 # Load user's shell profile to get npm/node in PATH
 # This is needed because .app bundles don't inherit the shell environment
 export HOME="${HOME:-/Users/$(whoami)}"

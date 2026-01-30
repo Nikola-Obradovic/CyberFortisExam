@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Fortis CMS - Question Management</title>
+    <link rel="stylesheet" href="cms-styles.css">
+    <link rel="icon" type="image/png" href="LogoIcon.png">
+</head>
+<body>
+    <!-- Login Section -->
+    <div id="login-section" class="login-container">
+        <div class="login-card">
+            <img src="Logo.png" alt="Cyber Fortis Logo" class="logo">
+            <h1>CMS Admin Login</h1>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required placeholder="Enter username" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required placeholder="Enter password" autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <div id="login-error" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CMS Dashboard -->
+    <div id="cms-section" class="cms-container" style="display: none;">
+        <!-- Header -->
+        <header class="cms-header">
+            <div class="header-left">
+                <img src="Logo.png" alt="Cyber Fortis Logo" class="header-logo">
+                <h1>Question Management CMS</h1>
+            </div>
+            <div class="header-right">
+                <button id="view-submissions-btn" class="btn btn-secondary">View Submissions</button>
+                <button id="logout-btn" class="btn btn-danger">Logout</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="cms-main">
+            <!-- Sidebar - Question List -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h2>Questions</h2>
+                    <button id="add-question-btn" class="btn btn-success">+ Add New</button>
+                </div>
+                <div id="question-list" class="question-list">
+                    <!-- Questions will be loaded here -->
+                </div>
+            </aside>
+
+            <!-- Editor Panel -->
+            <section class="editor-panel">
+                <div id="editor-placeholder" class="editor-placeholder">
+                    <p>Select a question to edit or click "Add New" to create a new question</p>
+                </div>
+
+                <form id="question-form" class="question-form" style="display: none;">
+                    <h2 id="form-title">Edit Question</h2>
+                    <input type="hidden" id="question-id">
+
+                    <div class="form-group">
+                        <label for="order-num">Question Order</label>
+                        <input type="number" id="order-num" name="order_num" min="1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="question-text">Question Text</label>
+                        <textarea id="question-text" name="question_text" rows="3" required placeholder="Enter the question..."></textarea>
+                    </div>
+
+                    <div class="options-grid">
+                        <div class="form-group option-group">
+                            <label for="option-a">
+                                <input type="radio" name="correct_answer" value="A" required>
+                                Option A (Click to mark as correct)
+                            </label>
+                            <input type="text" id="option-a" name="option_a" required placeholder="Option A">
+                        </div>
+
+                        <div class="form-group option-group">
+                            <label for="option-b">
+                                <input type="radio" name="correct_answer" value="B">
+                                Option B (Click to mark as correct)
+                            </label>
+                            <input type="text" id="option-b" name="option_b" required placeholder="Option B">
+                        </div>
+
+                        <div class="form-group option-group">
+                            <label for="option-c">
+                                <input type="radio" name="correct_answer" value="C">
+                                Option C (Click to mark as correct)
+                            </label>
+                            <input type="text" id="option-c" name="option_c" required placeholder="Option C">
+                        </div>
+
+                        <div class="form-group option-group">
+                            <label for="option-d">
+                                <input type="radio" name="correct_answer" value="D">
+                                Option D (Click to mark as correct)
+                            </label>
+                            <input type="text" id="option-d" name="option_d" required placeholder="Option D">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Question</button>
+                        <button type="button" id="cancel-btn" class="btn btn-secondary">Cancel</button>
+                        <button type="button" id="delete-btn" class="btn btn-danger" style="display: none;">Delete Question</button>
+                    </div>
+
+                    <div id="form-message" class="form-message"></div>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <!-- Submissions Modal -->
+    <div id="submissions-modal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Quiz Submissions</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <table id="submissions-table" class="submissions-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Score</th>
+                            <th>Date</th>
+                            <th>PDF</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Submissions will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div id="delete-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Confirm Delete</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this question? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-delete-btn" class="btn btn-danger">Delete</button>
+                <button class="btn btn-secondary modal-close">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="cms.js"></script>
+</body>
+</html>

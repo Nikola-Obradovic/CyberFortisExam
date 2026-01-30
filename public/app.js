@@ -324,6 +324,9 @@ async function handleQuizSubmit() {
 
     // Submit answers to server
     try {
+        // Include the question IDs that were asked in this quiz
+        const questionIds = questions.map(q => q.id);
+
         const response = await fetch('/api/submit', {
             method: 'POST',
             headers: {
@@ -334,7 +337,8 @@ async function handleQuizSubmit() {
                 lastName: userInfo.lastName,
                 email: userInfo.email,
                 phone: userInfo.phone,
-                answers: userAnswers
+                answers: userAnswers,
+                questionIds: questionIds
             })
         });
 
