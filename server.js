@@ -13,6 +13,7 @@ const PORT = 3000;
 // CMS Configuration - Admin credentials from environment variables
 const CMS_USERNAME = process.env.CMS_USERNAME;
 const CMS_PASSWORD = process.env.CMS_PASSWORD;
+const CMS_SECRET_PATH = process.env.CMS_SECRET_PATH || ''; // Dynamic UUID path for CMS
 
 if (!CMS_USERNAME || !CMS_PASSWORD) {
   console.error('ERROR: CMS_USERNAME and CMS_PASSWORD environment variables must be set.');
@@ -30,6 +31,41 @@ const SESSION_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 // Middleware
 app.use(bodyParser.json());
 app.use(cookieParser());
+
+// Block direct access to cms.html and cms-related files when CMS_SECRET_PATH is set
+app.use((req, res, next) => {
+  if (CMS_SECRET_PATH) {
+    // Block direct access to CMS files
+    if (req.path === '/cms.html' || req.path === '/cms.js' || req.path === '/cms-styles.css') {
+      return res.status(404).send('Not found');
+    }
+  }
+  next();
+});
+
+// Serve CMS at secret path when CMS_SECRET_PATH is set
+if (CMS_SECRET_PATH) {
+  app.get(`/${CMS_SECRET_PATH}/cms.html`, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'cms.html'));
+  });
+  app.get(`/${CMS_SECRET_PATH}/cms.js`, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'cms.js'));
+  });
+  app.get(`/${CMS_SECRET_PATH}/cms-styles.css`, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'cms-styles.css'));
+  });
+  // Serve images and other assets needed by CMS from secret path
+  app.get(`/${CMS_SECRET_PATH}/:file`, (req, res, next) => {
+    const file = req.params.file;
+    const filePath = path.join(__dirname, 'public', file);
+    if (fs.existsSync(filePath)) {
+      res.sendFile(filePath);
+    } else {
+      next();
+    }
+  });
+}
+
 app.use(express.static('public'));
 
 // CMS Authentication Middleware
@@ -496,7 +532,11 @@ app.post('/api/cms/questions/reorder', cmsAuth, (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
-  console.log(`CMS available at http://localhost:${PORT}/cms.html`);
+  if (CMS_SECRET_PATH) {
+    console.log(`CMS available at http://localhost:${PORT}/${CMS_SECRET_PATH}/cms.html`);
+  } else {
+    console.log(`CMS available at http://localhost:${PORT}/cms.html`);
+  }
   console.log('Press Ctrl+C to stop the server');
 });
 
