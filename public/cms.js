@@ -3,6 +3,7 @@
 // State
 let questions = [];
 let currentQuestionId = null;
+let validatedQuestions = null; // Holds validated questions for bulk import
 
 // DOM Elements
 const loginSection = document.getElementById('login-section');
@@ -56,7 +57,10 @@ function setupEventListeners() {
     logoutBtn.addEventListener('click', handleLogout);
 
     // Add new question
-    addQuestionBtn.addEventListener('click', () => showQuestionForm(null));
+    addQuestionBtn.addEventListener('click', () => {
+        switchToTab('single');
+        showQuestionForm(null);
+    });
 
     // Cancel editing
     cancelBtn.addEventListener('click', hideQuestionForm);
@@ -85,6 +89,52 @@ function setupEventListeners() {
     window.addEventListener('click', (e) => {
         if (e.target === submissionsModal) submissionsModal.style.display = 'none';
         if (e.target === deleteModal) deleteModal.style.display = 'none';
+    });
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            switchToTab(btn.dataset.tab);
+        });
+    });
+
+    // Bulk import event listeners
+    const validateBtn = document.getElementById('validate-json-btn');
+    const importBtn = document.getElementById('import-json-btn');
+    const bulkJsonTextarea = document.getElementById('bulk-json');
+
+    if (validateBtn) {
+        validateBtn.addEventListener('click', handleValidateJson);
+    }
+
+    if (importBtn) {
+        importBtn.addEventListener('click', handleBulkImport);
+    }
+
+    // Reset validation when JSON changes
+    if (bulkJsonTextarea) {
+        bulkJsonTextarea.addEventListener('input', () => {
+            validatedQuestions = null;
+            const importBtn = document.getElementById('import-json-btn');
+            if (importBtn) importBtn.disabled = true;
+            const validationResult = document.getElementById('validation-result');
+            if (validationResult) {
+                validationResult.classList.remove('visible', 'success', 'error');
+            }
+        });
+    }
+}
+
+// Switch tab
+function switchToTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === `tab-${tabName}`);
     });
 }
 
@@ -388,4 +438,185 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Validate JSON for bulk import
+function handleValidateJson() {
+    const bulkJson = document.getElementById('bulk-json').value.trim();
+    const importBtn = document.getElementById('import-json-btn');
+
+    validatedQuestions = null;
+    importBtn.disabled = true;
+
+    if (!bulkJson) {
+        showValidationResult('error', 'Please paste JSON data first.');
+        return;
+    }
+
+    let parsed;
+    try {
+        parsed = JSON.parse(bulkJson);
+    } catch (e) {
+        showValidationResult('error', `Invalid JSON syntax: ${e.message}`);
+        return;
+    }
+
+    // Check if it's an array
+    if (!Array.isArray(parsed)) {
+        showValidationResult('error', 'JSON must be an array of question objects. Wrap your questions in [ ]');
+        return;
+    }
+
+    if (parsed.length === 0) {
+        showValidationResult('error', 'The array is empty. Add at least one question.');
+        return;
+    }
+
+    // Validate each question
+    const errors = [];
+    const validQuestions = [];
+    const requiredFields = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer'];
+    const validAnswers = ['A', 'B', 'C', 'D'];
+
+    parsed.forEach((q, index) => {
+        const questionNum = index + 1;
+        const questionErrors = [];
+
+        // Check for required fields
+        requiredFields.forEach(field => {
+            if (!q[field] || (typeof q[field] === 'string' && q[field].trim() === '')) {
+                questionErrors.push(`Missing or empty "${field}"`);
+            }
+        });
+
+        // Validate correct_answer
+        if (q.correct_answer) {
+            const answer = q.correct_answer.toString().toUpperCase().trim();
+            if (!validAnswers.includes(answer)) {
+                questionErrors.push(`correct_answer must be A, B, C, or D (got "${q.correct_answer}")`);
+            }
+        }
+
+        // Check for unknown fields (warning only)
+        const knownFields = [...requiredFields, 'order_num'];
+        Object.keys(q).forEach(key => {
+            if (!knownFields.includes(key)) {
+                questionErrors.push(`Unknown field "${key}" will be ignored`);
+            }
+        });
+
+        if (questionErrors.length > 0) {
+            errors.push({
+                questionNum,
+                preview: q.question_text ? q.question_text.substring(0, 50) + '...' : '(no question text)',
+                errors: questionErrors
+            });
+        } else {
+            validQuestions.push({
+                question_text: q.question_text.trim(),
+                option_a: q.option_a.trim(),
+                option_b: q.option_b.trim(),
+                option_c: q.option_c.trim(),
+                option_d: q.option_d.trim(),
+                correct_answer: q.correct_answer.toUpperCase().trim(),
+                order_num: q.order_num ? parseInt(q.order_num) : null
+            });
+        }
+    });
+
+    if (errors.length > 0) {
+        let html = `<h4>Validation Failed</h4><p>${errors.length} question(s) have errors:</p><ul>`;
+        errors.forEach(err => {
+            html += `<li class="error-item">Question ${err.questionNum}: <span class="question-preview">${escapeHtml(err.preview)}</span>`;
+            html += `<ul>`;
+            err.errors.forEach(e => {
+                html += `<li class="error-item">- ${escapeHtml(e)}</li>`;
+            });
+            html += `</ul></li>`;
+        });
+        html += '</ul>';
+        showValidationResult('error', html, true);
+    } else {
+        validatedQuestions = validQuestions;
+        importBtn.disabled = false;
+        let html = `<h4>Validation Passed</h4>`;
+        html += `<p class="success-item">${validQuestions.length} question(s) ready to import:</p><ul>`;
+        validQuestions.forEach((q, i) => {
+            html += `<li class="success-item">${i + 1}. ${escapeHtml(q.question_text.substring(0, 60))}${q.question_text.length > 60 ? '...' : ''}</li>`;
+        });
+        html += '</ul>';
+        showValidationResult('success', html, true);
+    }
+}
+
+// Show validation result
+function showValidationResult(type, message, isHtml = false) {
+    const validationResult = document.getElementById('validation-result');
+    validationResult.classList.remove('success', 'error');
+    validationResult.classList.add('visible', type);
+
+    if (isHtml) {
+        validationResult.innerHTML = message;
+    } else {
+        validationResult.innerHTML = `<h4>${type === 'success' ? 'Success' : 'Error'}</h4><p>${escapeHtml(message)}</p>`;
+    }
+}
+
+// Handle bulk import
+async function handleBulkImport() {
+    if (!validatedQuestions || validatedQuestions.length === 0) {
+        showBulkMessage('Please validate the JSON first.', 'error');
+        return;
+    }
+
+    const importBtn = document.getElementById('import-json-btn');
+    importBtn.disabled = true;
+    importBtn.textContent = 'Importing...';
+
+    try {
+        const response = await fetch('/api/cms/questions/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ questions: validatedQuestions })
+        });
+
+        if (response.status === 401) {
+            showLogin();
+            return;
+        }
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showBulkMessage(`Successfully imported ${data.imported} question(s)!`, 'success');
+            // Clear the form
+            document.getElementById('bulk-json').value = '';
+            validatedQuestions = null;
+            document.getElementById('validation-result').classList.remove('visible', 'success', 'error');
+            // Reload questions list
+            await loadQuestions();
+        } else {
+            showBulkMessage(data.error || 'Failed to import questions.', 'error');
+        }
+    } catch (error) {
+        console.error('Error importing questions:', error);
+        showBulkMessage('Connection error. Please try again.', 'error');
+    } finally {
+        importBtn.disabled = false;
+        importBtn.textContent = 'Import Questions';
+    }
+}
+
+// Show bulk import message
+function showBulkMessage(message, type) {
+    const bulkMessage = document.getElementById('bulk-message');
+    bulkMessage.textContent = message;
+    bulkMessage.className = 'form-message ' + type;
+    bulkMessage.style.display = 'block';
+
+    if (type === 'success') {
+        setTimeout(() => {
+            bulkMessage.style.display = 'none';
+        }, 5000);
+    }
 }

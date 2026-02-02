@@ -507,6 +507,75 @@ app.get('/api/cms/submissions', cmsAuth, (req, res) => {
   });
 });
 
+// CMS Bulk Import Questions
+app.post('/api/cms/questions/bulk', cmsAuth, (req, res) => {
+  const { questions } = req.body;
+
+  if (!questions || !Array.isArray(questions) || questions.length === 0) {
+    return res.status(400).json({ error: 'Questions array is required and must not be empty' });
+  }
+
+  const requiredFields = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer'];
+  const validAnswers = ['A', 'B', 'C', 'D'];
+
+  // Validate all questions first
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i];
+    for (const field of requiredFields) {
+      if (!q[field] || (typeof q[field] === 'string' && q[field].trim() === '')) {
+        return res.status(400).json({ error: `Question ${i + 1}: Missing or empty "${field}"` });
+      }
+    }
+    if (!validAnswers.includes(q.correct_answer.toUpperCase())) {
+      return res.status(400).json({ error: `Question ${i + 1}: correct_answer must be A, B, C, or D` });
+    }
+  }
+
+  // Get current max order_num
+  db.get('SELECT MAX(order_num) as max_order FROM questions', [], (err, row) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    let currentOrder = (row.max_order || 0);
+
+    // Insert all questions
+    const stmt = db.prepare(
+      'INSERT INTO questions (question_text, option_a, option_b, option_c, option_d, correct_answer, order_num) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    );
+
+    let imported = 0;
+    let errors = [];
+
+    const insertNext = (index) => {
+      if (index >= questions.length) {
+        stmt.finalize();
+        if (errors.length > 0) {
+          return res.status(500).json({ error: `Imported ${imported} questions, but ${errors.length} failed`, errors });
+        }
+        return res.json({ success: true, imported, message: `Successfully imported ${imported} question(s)` });
+      }
+
+      const q = questions[index];
+      const orderNum = q.order_num || (++currentOrder);
+
+      stmt.run(
+        [q.question_text.trim(), q.option_a.trim(), q.option_b.trim(), q.option_c.trim(), q.option_d.trim(), q.correct_answer.toUpperCase(), orderNum],
+        function(err) {
+          if (err) {
+            errors.push({ index: index + 1, error: err.message });
+          } else {
+            imported++;
+          }
+          insertNext(index + 1);
+        }
+      );
+    };
+
+    insertNext(0);
+  });
+});
+
 // CMS Reorder Questions
 app.post('/api/cms/questions/reorder', cmsAuth, (req, res) => {
   const { orders } = req.body; // Array of { id, order_num }

@@ -57,11 +57,19 @@
 
             <!-- Editor Panel -->
             <section class="editor-panel">
-                <div id="editor-placeholder" class="editor-placeholder">
-                    <p>Select a question to edit or click "Add New" to create a new question</p>
+                <!-- Tabs -->
+                <div class="editor-tabs">
+                    <button class="tab-btn active" data-tab="single">Single Question</button>
+                    <button class="tab-btn" data-tab="bulk">Bulk Import (JSON)</button>
                 </div>
 
-                <form id="question-form" class="question-form" style="display: none;">
+                <!-- Single Question Tab -->
+                <div id="tab-single" class="tab-content active">
+                    <div id="editor-placeholder" class="editor-placeholder">
+                        <p>Select a question to edit or click "Add New" to create a new question</p>
+                    </div>
+
+                    <form id="question-form" class="question-form" style="display: none;">
                     <h2 id="form-title">Edit Question</h2>
                     <input type="hidden" id="question-id">
 
@@ -117,6 +125,74 @@
 
                     <div id="form-message" class="form-message"></div>
                 </form>
+                </div>
+
+                <!-- Bulk Import Tab -->
+                <div id="tab-bulk" class="tab-content">
+                    <div class="bulk-import-container">
+                        <h2>Bulk Import Questions</h2>
+                        <p class="bulk-description">Paste multiple questions in JSON format to import them all at once. Perfect for AI-generated questions!</p>
+
+                        <div class="guidelines-section">
+                            <h3>JSON Format Guidelines</h3>
+                            <p>Paste a JSON array of question objects. Each question must have:</p>
+                            <ul>
+                                <li><code>question_text</code> - The question text (required)</li>
+                                <li><code>option_a</code> - Option A text (required)</li>
+                                <li><code>option_b</code> - Option B text (required)</li>
+                                <li><code>option_c</code> - Option C text (required)</li>
+                                <li><code>option_d</code> - Option D text (required)</li>
+                                <li><code>correct_answer</code> - A, B, C, or D (required)</li>
+                                <li><code>order_num</code> - Question order number (optional, auto-assigned if missing)</li>
+                            </ul>
+
+                            <div class="example-json">
+                                <h4>Example:</h4>
+                                <pre>[
+  {
+    "question_text": "What does SSH stand for?",
+    "option_a": "Secure Shell",
+    "option_b": "Secure Socket Handler",
+    "option_c": "System Shell Host",
+    "option_d": "Server Shell Handler",
+    "correct_answer": "A"
+  },
+  {
+    "question_text": "Which port does HTTPS use by default?",
+    "option_a": "80",
+    "option_b": "443",
+    "option_c": "8080",
+    "option_d": "22",
+    "correct_answer": "B"
+  }
+]</pre>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="bulk-json">Paste JSON Here:</label>
+                            <textarea id="bulk-json" rows="15" placeholder='[
+  {
+    "question_text": "Your question here?",
+    "option_a": "Option A",
+    "option_b": "Option B",
+    "option_c": "Option C",
+    "option_d": "Option D",
+    "correct_answer": "A"
+  }
+]'></textarea>
+                        </div>
+
+                        <div id="validation-result" class="validation-result"></div>
+
+                        <div class="form-actions">
+                            <button type="button" id="validate-json-btn" class="btn btn-secondary">Validate JSON</button>
+                            <button type="button" id="import-json-btn" class="btn btn-primary" disabled>Import Questions</button>
+                        </div>
+
+                        <div id="bulk-message" class="form-message"></div>
+                    </div>
+                </div>
             </section>
         </main>
     </div>
